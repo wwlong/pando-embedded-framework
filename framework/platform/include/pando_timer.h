@@ -12,15 +12,13 @@
 #ifndef _PANDO_TIMER_H_
 #define _PANDO_TIMER_H_
 
-#include "pando_types.h"
-
 //define the timer structure
 struct pd_timer
 {
     //the timer interval (millisecond)
-    uint16_t interval;
-    //whether repeat
-    uint8_t repeated;
+    unsigned short interval;
+    //whether repeat. 0: do not repeated; other: repeated
+    unsigned char repeated;
     //the function pointer to callback if expiry
     void (*expiry_cb)(void);
 };

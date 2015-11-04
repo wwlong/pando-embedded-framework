@@ -54,9 +54,6 @@ typedef double              double64;
 
 typedef unsigned int        size_t;
 
-//define data handler callback
-typedef void (* data_handler_callback)(uint8_t *buffer, uint16_t length);
-
 #ifndef NULL
 #define NULL (void *)0
 #endif /* NULL */
