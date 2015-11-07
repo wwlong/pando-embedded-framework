@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include "platform/include/usart.h"
+#include "platform/include/pando_serial.h"
 #include "stm32f10x.h"
 
 //define the max length to receive
@@ -11,7 +11,7 @@ uint8_t g_usart1_received_buf[USART_RECEIVED_MAX_LEN];
 //declare the data handler when receiving data
 data_handler_callback g_rx_data_handler;
 
-void usart1_init(void)
+void serial_port1_init(void)
 {
     //enable usart1, GPIOA clock.
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1 | RCC_APB2Periph_GPIOA, ENABLE);
@@ -70,7 +70,7 @@ void usart1_init(void)
     return;
 }
 
-void on_usart1_recv_data_callback(data_handler_callback data_recv_cb)
+void on_serial_port1_recv_data_callback(data_handler_callback data_recv_cb)
 {
     g_rx_data_handler = data_recv_cb;
     return;
@@ -83,7 +83,7 @@ void usart1_putchar(unsigned char ch)
     return;
 }
 
-uint16_t usart1_send(uint8_t *buffer, uint16_t length)
+uint16_t serial_port1_send(uint8_t *buffer, uint16_t length)
 {
     uint16_t tx_index;
     for(tx_index = 0; tx_index < length; tx_index++)

@@ -10,41 +10,49 @@
  *********************************************************/
 
 #include "pando_storage_interface.h"
+#include "platform/include/pando_files.h"
+#include "platform/include/pando_sys.h"
 #include "platform/include/pando_types.h"
-//#include "../../peripherl/driver/stmflash.h"
 
+#define PANO_CONFIG_FILE "PANDO_CONFIG"
 #define PANDO_CONFIG_ADDRESS
 #define PANDO_CONFIG_SEC (0x7E)
 #define DATAPAIR_KEY_LEN (32)
 #define DATAPAIR_VALUE_LEN (96)
 #define PANDO_CONFIG_MAGIC (0x70646777)
 
-struct data_pair 
+struct data_pair
 {
-    struct data_pair * next;
+    struct data_pair *next;
     char key[DATAPAIR_KEY_LEN];
     char val[DATAPAIR_VALUE_LEN];
 };
 
-static struct data_pair * head = NULL;
+static struct data_pair *head = NULL;
+
+//declare the file identifier
+int g_file_identifier;
+
+void init_data_file()
+{
+    g_file_identifier = file_open(PANO_CONFIG_FILE);
+    return;
+}
 
 static void save_data_to_flash()
 {
     pd_printf("saving data to flash...\n");
     int32 magic = PANDO_CONFIG_MAGIC;
-    //STMFLASH_Write(PANDO_CONFIG_ADDRESS, (uint16 *)(&magic), sizeof(int32));
+    file_write(g_file_identifier, &magic, sizeof(int32));
     struct data_pair * cur;
     int32 cnt = 0;
-    pd_printf("saving data to flash...\n");
-//    STMFLASH_Write(PANDO_CONFIG_ADDRESS, (uint16 *)(&magic), sizeof(int32));
     for(cur=head; cur!=NULL; cur=cur->next) 
     {
-        //STMFLASH_Write(PANDO_CONFIG_ADDRESS + sizeof(int32) + sizeof(int32) + (cnt * sizeof(struct data_pair)),
-            //(uint16 *)cur, sizeof(struct data_pair));
-        cnt ++;
+        file_write(g_file_identifier, cur, sizeof(struct data_pair));
+        cnt++;
     }
-    //STMFLASH_Write(PANDO_CONFIG_ADDRESS + sizeof(int32),
-        //(uint16 *)&cnt, sizeof(int32));
+
+    file_write(g_file_identifier, &cnt, sizeof(int32));
     pd_printf("done...\n");
 }
 
@@ -54,25 +62,25 @@ void load_data_from_flash()
     int32 cnt, i;
     int32 magic = 0;
     pd_printf("loading config data from flash...\n");
-	//TODO: add system data storage interface.
-    //STMFLASH_Read(PANDO_CONFIG_ADDRESS, (uint16 *)&magic, sizeof(int32));
+    //TODO: add system data storage interface.
+    file_read(g_file_identifier, &magic, sizeof(int32));
     pd_printf("read magic : %x\n", magic);
     if(magic != PANDO_CONFIG_MAGIC)
     {
         pd_printf("flash config data not initialized!\n");
         return;
     }
-	////TODO: add system data storage interface.
-    //STMFLASH_Read(PANDO_CONFIG_ADDRESS + sizeof(int32), (uint16 *)&cnt, sizeof(int32));
+    ////TODO: add system data storage interface.
+    file_read(g_file_identifier, &cnt, sizeof(int32));
     pd_printf("reading config from flash , key count : %d...\n", cnt);
     for(i=0; i<cnt; i++) 
     {
         struct data_pair * p = (struct data_pair * )pd_malloc(sizeof(struct data_pair));
-        STMFLASH_Read(PANDO_CONFIG_ADDRESS + sizeof(int32) + sizeof(int32) + sizeof(struct data_pair)*i,
-            (uint16 *)p, sizeof(struct data_pair));
+        file_read(g_file_identifier, p, sizeof(struct data_pair));
         p->next = head;
         head = p;
     }
+    
     pd_printf("done...\n");
 }
 
@@ -84,6 +92,7 @@ static struct data_pair * find_pair_by_key(char * key){
             return p;
         }
     }
+
     return NULL;
 }
  
@@ -103,7 +112,7 @@ SET_RESULT pando_data_set(char* key, char* value)
     {
         // key exist, update value.
         pd_strncpy(p->val, value, DATAPAIR_VALUE_LEN);
-        pd_printf("key %s updated...\n", key, p->val);
+        pd_printf("key %s updated..., value %s \n", key, p->val);
     } else {
         // key not exist, create a new pair.
         struct data_pair * p = (struct data_pair * )pd_malloc(sizeof(struct data_pair));
@@ -113,6 +122,7 @@ SET_RESULT pando_data_set(char* key, char* value)
         head = p;
         pd_printf("key %s created..., value %s \n", key, p->val);
     }
+
     save_data_to_flash();
 }
 
@@ -130,6 +140,7 @@ char * pando_data_get(char* key)
     {
         return p->val;
     }
+
     return NULL;
 }
 
@@ -154,4 +165,3 @@ void pando_storage_clean()
 {
 
 }
-
